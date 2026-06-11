@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareerNav · 90天AI产品经理进化计划</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "deep-space": "#0F172A",
+                        "electric-violet": "#8B5CF6",
+                        "tech-silver": "#F3F4F6",
+                        "success": "#10B981",
+                        "warning": "#F59E0B",
+                        "danger": "#EF4444",
+                    },
+                    fontFamily: {
+                        sans: ["Inter", "system-ui", "sans-serif"],
+                        mono: ["JetBrains Mono", "monospace"],
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        :root {
+            --deep-space: #0F172A;
+            --electric-violet: #8B5CF6;
+            --tech-silver: #F3F4F6;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --neon-cyan: #06B6D4;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--deep-space);
+            color: var(--tech-silver);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            .scanlines::before {
+                content: '';
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0px, rgba(0,0,0,0.03) 1px, transparent 1px, transparent 2px);
+                pointer-events: none; z-index: 1000;
+            }
+        }
+        #particle-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 16px;
+        }
+        .glass-strong {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 16px;
+        }
+        .glow-purple { box-shadow: 0 8px 32px rgba(139, 92, 246, 0.15), 0 0 0 1px rgba(139, 92, 246, 0.1); }
+        .glow-cyan { box-shadow: 0 8px 32px rgba(6, 182, 212, 0.15), 0 0 0 1px rgba(6, 182, 212, 0.1); }
+        .glow-success { box-shadow: 0 8px 32px rgba(16, 185, 129, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.1); }
+        .game-progress {
+            position: relative; height: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px; overflow: hidden;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        .game-progress-fill {
+            height: 100%; border-radius: 6px;
+            background: linear-gradient(90deg, #8B5CF6, #06B6D4, #8B5CF6);
+            background-size: 200% 100%;
+            animation: shimmer 2s linear infinite;
+            position: relative;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .game-progress-fill::after {
+            content: ''; position: absolute; right: 0; top: 0;
+            width: 20px; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4));
+            animation: pulse-bar 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-bar { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .mission-card {
+            transition: all 0.3s ease-out;
+            transform-style: preserve-3d; perspective: 1000px;
+            border-radius: 16px;
+        }
+        .mission-card:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 12px 40px rgba(139, 92, 246, 0.2), 0 0 0 1px rgba(139, 92, 246, 0.3);
+        }
+        .mission-card.completed {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(15, 23, 42, 0.8));
+        }
+        .mission-card.completed:hover {
+            box-shadow: 0 12px 40px rgba(16, 185, 129, 0.2), 0 0 0 1px rgba(16, 185, 129, 0.3);
+        }
+        .stage-node {
+            position: relative; transition: all 0.3s ease; cursor: pointer;
+        }
+        .stage-node::before {
+            content: ''; position: absolute; inset: -4px;
+            border-radius: 50%; background: linear-gradient(135deg, #8B5CF6, #06B6D4);
+            opacity: 0; transition: opacity 0.3s ease; z-index: -1;
+        }
+        .stage-node:hover::before, .stage-node.active::before { opacity: 1; }
+        .stage-node.active { transform: scale(1.15); }
+        .stage-node.locked { opacity: 0.4; pointer-events: none; }
+        .agent-message {
+            position: relative; padding-left: 16px; border-left: 2px solid #8B5CF6;
+        }
+        .agent-message::before {
+            content: ''; position: absolute; left: -5px; top: 8px;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #8B5CF6; box-shadow: 0 0 10px #8B5CF6;
+        }
+        .custom-checkbox {
+            appearance: none; width: 24px; height: 24px;
+            border: 2px solid rgba(139, 92, 246, 0.4); border-radius: 8px;
+            background: transparent; cursor: pointer; position: relative;
+            transition: all 0.3s ease;
+        }
+        .custom-checkbox:checked {
+            background: linear-gradient(135deg, #8B5CF6, #06B6D4); border-color: transparent;
+        }
+        .custom-checkbox:checked::after {
+            content: '✓'; position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); color: white;
+            font-size: 14px; font-weight: bold;
+        }
+        .custom-checkbox:focus-visible {
+            outline: 2px solid #8B5CF6; outline-offset: 2px;
+        }
+        .ripple { position: relative; overflow: hidden; }
+        .ripple::after {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            top: 0; left: 0; pointer-events: none;
+            background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10.01%);
+            background-repeat: no-repeat; background-position: 50%;
+            transform: scale(10, 10); opacity: 0;
+            transition: transform 0.5s, opacity 0.5s;
+        }
+        .ripple:active::after { transform: scale(0, 0); opacity: 0.3; transition: 0s; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+        ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #8B5CF6, #06B6D4); border-radius: 3px; }
+        .level-up-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8);
+            z-index: 9999; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+        }
+        .level-up-overlay.active { opacity: 1; pointer-events: auto; }
+        @keyframes badge-fly-in {
+            0% { transform: translateX(-100px) rotate(-30deg) scale(0); opacity: 0; }
+            60% { transform: translateX(10px) rotate(5deg) scale(1.1); opacity: 1; }
+            100% { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
+        }
+        .badge-fly-in { animation: badge-fly-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes exp-float {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-60px) scale(1.2); opacity: 0; }
+        }
+        .exp-float { animation: exp-float 1.2s ease-out forwards; }
+        .typing-cursor::after { content: '|'; animation: blink 1s step-end infinite; color: #8B5CF6; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes breathe {
+            0%, 100% { box-shadow: 0 0 5px rgba(139,92,246,0.4), 0 0 20px rgba(139,92,246,0.2); }
+            50% { box-shadow: 0 0 20px rgba(139,92,246,0.6), 0 0 40px rgba(139,92,246,0.3); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            #particle-canvas { display: none; }
+        }
+        button:focus-visible, a:focus-visible, input:focus-visible {
+            outline: 2px solid #8B5CF6;
+            outline-offset: 2px;
+        }
+        @media (max-width: 768px) {
+            .stage-nav { flex-direction: column; gap: 1rem; }
+            .stage-nav .connector { display: none; }
+        }
+    </style>
+</head>
+<body class="scanlines">
+    <canvas id="particle-canvas" aria-hidden="true"></canvas>
+
+    <!-- Level Up Modal -->
+    <div id="level-up-modal" class="level-up-overlay" role="dialog" aria-modal="true" aria-labelledby="level-up-title">
+        <div class="glass-strong p-8 max-w-md w-full mx-4 text-center glow-purple">
+            <div class="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center" style="animation: float 3s ease-in-out infinite">
+                <i class="fas fa-trophy text-white text-3xl"></i>
+            </div>
+            <h2 id="level-up-title" class="text-3xl font-bold text-white mb-2">阶段通关！</h2>
+            <p class="text-gray-400 mb-6">你已完成 <span id="completed-stage-name" class="text-purple-400 font-bold"></span></p>
+            <div id="unlocked-badges" class="flex justify-center gap-4 mb-6"></div>
+            <button onclick="closeLevelUp()" class="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-white font-semibold hover:opacity-90 transition-opacity ripple">
+                进入下一阶段 <i class="fas fa-arrow-right ml-2"></i>
+            </button>
+        </div>
+    </div>
+
+    <div class="relative z-10 min-h-screen">
+
+        <!-- Header -->
+        <header class="glass-strong sticky top-0 z-50 border-b border-purple-500/20" role="banner">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center glow-purple" aria-hidden="true">
+                            <i class="fas fa-rocket text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-white tracking-tight">
+                                <span class="text-purple-400">作战</span>指挥中心
+                            </h1>
+                            <p class="text-xs text-gray-400 font-mono">985小白 → AI产品经理 · 3个月作战计划</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <div class="hidden md:flex items-center gap-3">
+                            <span class="text-sm text-gray-400 font-mono">总进度</span>
+                            <div class="w-48">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-cyan-400 font-mono">Day <span id="current-day">1</span>/90</span>
+                                    <span class="text-purple-400 font-mono" id="overall-percent">1%</span>
+                                </div>
+                                <div class="game-progress" role="progressbar" aria-label="总进度" aria-valuenow="1" aria-valuemin="0" aria-valuemax="90">
+                                    <div class="game-progress-fill" id="overall-progress" style="width:1%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 text-sm">
+                            <div class="flex items-center gap-2 text-yellow-400" title="获得星星">
+                                <i class="fas fa-star" aria-hidden="true"></i>
+                                <span class="font-mono" id="stars-count">0</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-cyan-400" title="连续学习天数">
+                                <i class="fas fa-fire" aria-hidden="true"></i>
+                                <span class="font-mono" id="streak-count">1</span>天
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stage Navigation -->
+        <nav class="glass border-b border-purple-500/10 py-6" role="navigation" aria-label="阶段导航">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="stage-nav flex items-center justify-center gap-2 md:gap-4 relative flex-wrap md:flex-nowrap">
+                    <div class="stage-node active flex flex-col items-center gap-2" data-stage="1" onclick="switchStage(1)" role="button" tabindex="0" aria-label="第一阶段：破冰筑基" onkeypress="if(event.key==='Enter')switchStage(1)">
+                        <div class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center glow-purple border-2 border-purple-400/50 transition-all" aria-hidden="true">
+                            <i class="fas fa-snowflake text-white text-lg md:text-xl"></i>
+                        </div>
+                        <span class="text-xs md:text-sm font-medium text-purple-300">破冰筑基</span>
+                        <span class="text-[10px] text-gray-500 font-mono">Day 1-20</span>
+                    </div>
+                    <div class="connector hidden md:block w-16 lg:w-24 h-0.5 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full" aria-hidden="true"></div>
+                    <div class="stage-node flex flex-col items-center gap-2" data-stage="2" onclick="switchStage(2)" role="button" tabindex="0" aria-label="第二阶段：项目实战" onkeypress="if(event.key==='Enter')switchStage(2)">
+                        <div class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-600/30 transition-all" aria-hidden="true">
+                            <i class="fas fa-hammer text-gray-400 text-lg md:text-xl"></i>
+                        </div>
+                        <span class="text-xs md:text-sm font-medium text-gray-500">项目实战</span>
+                        <span class="text-[10px] text-gray-600 font-mono">Day 21-60</span>
+                    </div>
+                    <div class="connector hidden md:block w-16 lg:w-24 h-0.5 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full" aria-hidden="true"></div>
+                    <div class="stage-node flex flex-col items-center gap-2" data-stage="break" onclick="switchStage('break')" role="button" tabindex="0" aria-label="休整期" onkeypress="if(event.key==='Enter')switchStage('break')">
+                        <div class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-600/30 transition-all" aria-hidden="true">
+                            <i class="fas fa-coffee text-gray-400 text-lg md:text-xl"></i>
+                        </div>
+                        <span class="text-xs md:text-sm font-medium text-gray-500">休整期</span>
+                        <span class="text-[10px] text-gray-600 font-mono">Day 61-67</span>
+                    </div>
+                    <div class="connector hidden md:block w-16 lg:w-24 h-0.5 bg-gradient-to-r from-gray-600 to-gray-500 rounded-full" aria-hidden="true"></div>
+                    <div class="stage-node flex flex-col items-center gap-2" data-stage="3" onclick="switchStage(3)" role="button" tabindex="0" aria-label="第三阶段：面试冲刺" onkeypress="if(event.key==='Enter')switchStage(3)">
+                        <div class="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-600/30 transition-all" aria-hidden="true">
+                            <i class="fas fa-trophy text-gray-400 text-lg md:text-xl"></i>
+                        </div>
+                        <span class="text-xs md:text-sm font-medium text-gray-500">面试冲刺</span>
+                        <span class="text-[10px] text-gray-600 font-mono">Day 68-90</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                <!-- Left Sidebar -->
+                <aside class="lg:col-span-3 space-y-6" role="complementary">
+                    <div class="glass rounded-2xl p-6 glow-purple">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center" aria-hidden="true">
+                                <i class="fas fa-flag text-purple-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-white" id="stage-title">第一阶段</h3>
+                                <p class="text-sm text-purple-400" id="stage-subtitle">破冰筑基</p>
+                            </div>
+                        </div>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs mb-2">
+                                    <span class="text-gray-400">阶段进度</span>
+                                    <span class="text-cyan-400 font-mono" id="stage-percent">0%</span>
+                                </div>
+                                <div class="game-progress" role="progressbar" aria-label="阶段进度" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="game-progress-fill" id="stage-progress" style="width:0%"></div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="bg-white/5 rounded-xl p-3 text-center">
+                                    <div class="text-2xl font-bold text-white font-mono" id="completed-count">0</div>
+                                    <div class="text-xs text-gray-500">已完成</div>
+                                </div>
+                                <div class="bg-white/5 rounded-xl p-3 text-center">
+                                    <div class="text-2xl font-bold text-cyan-400 font-mono" id="remaining-count">20</div>
+                                    <div class="text-xs text-gray-500">剩余</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-purple-500/10">
+                            <h4 class="text-sm font-semibold text-gray-300 mb-3">阶段里程碑</h4>
+                            <div class="space-y-2" id="milestones-list" role="list"></div>
+                        </div>
+                    </div>
+
+                    <div class="glass rounded-2xl p-6">
+                        <h4 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                            <i class="fas fa-clock text-cyan-400" aria-hidden="true"></i>每日作息模板
+                        </h4>
+                        <div class="space-y-3" role="list">
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5" role="listitem">
+                                <div class="w-2 h-2 rounded-full bg-purple-500" aria-hidden="true"></div>
+                                <div class="flex-1"><div class="text-xs text-gray-300">08:30-11:30</div><div class="text-xs text-gray-500">项目实战 (核心)</div></div>
+                                <span class="text-xs text-purple-400 font-mono">37.5%</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5" role="listitem">
+                                <div class="w-2 h-2 rounded-full bg-cyan-500" aria-hidden="true"></div>
+                                <div class="flex-1"><div class="text-xs text-gray-300">13:30-16:00</div><div class="text-xs text-gray-500">知识补全</div></div>
+                                <span class="text-xs text-cyan-400 font-mono">31.3%</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5" role="listitem">
+                                <div class="w-2 h-2 rounded-full bg-yellow-500" aria-hidden="true"></div>
+                                <div class="flex-1"><div class="text-xs text-gray-300">16:00-17:30</div><div class="text-xs text-gray-500">数据分析</div></div>
+                                <span class="text-xs text-yellow-400 font-mono">18.8%</span>
+                            </div>
+                            <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5" role="listitem">
+                                <div class="w-2 h-2 rounded-full bg-pink-500" aria-hidden="true"></div>
+                                <div class="flex-1"><div class="text-xs text-gray-300">19:30-21:00</div><div class="text-xs text-gray-500">复盘输出</div></div>
+                                <span class="text-xs text-pink-400 font-mono">18.8%</span>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Center: Tasks -->
+                <section class="lg:col-span-6" role="main">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                            <i class="fas fa-tasks text-purple-400" aria-hidden="true"></i>每日作战任务
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <button onclick="changeDay(-1)" class="w-10 h-10 rounded-xl glass flex items-center justify-center hover:bg-purple-500/20 transition-colors ripple" aria-label="前一天">
+                                <i class="fas fa-chevron-left text-gray-400" aria-hidden="true"></i>
+                            </button>
+                            <div class="px-4 py-2 glass rounded-xl">
+                                <span class="text-sm font-mono text-cyan-400" id="day-display">Day 1</span>
+                            </div>
+                            <button onclick="changeDay(1)" class="w-10 h-10 rounded-xl glass flex items-center justify-center hover:bg-purple-500/20 transition-colors ripple" aria-label="后一天">
+                                <i class="fas fa-chevron-right text-gray-400" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="glass rounded-2xl p-6 mb-6 glow-cyan relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-500/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2" aria-hidden="true"></div>
+                        <div class="relative z-10">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono border border-cyan-500/30" id="stage-badge">第一阶段</span>
+                                <span class="text-xs text-gray-400 font-mono" id="day-date">2026.06.10</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-white mb-2" id="day-title">Agent电商认知破冰</h3>
+                            <p class="text-sm text-gray-400" id="day-desc">深度体验淘宝AI买手、京东京言等产品，完成真实购物任务，建立AI电商直觉。</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4" id="task-container" role="list" aria-label="任务列表"></div>
+
+                    <div class="glass rounded-2xl p-6 mt-6">
+                        <h4 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                            <i class="fas fa-scroll text-yellow-400" aria-hidden="true"></i>今日产出物
+                        </h4>
+                        <div class="space-y-2" id="outputs-list" role="list" aria-label="产出物列表"></div>
+                    </div>
+                </section>
+
+                <!-- Right Sidebar -->
+                <aside class="lg:col-span-3 space-y-6" role="complementary">
+                    <div class="glass rounded-2xl p-6">
+                        <h4 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                            <i class="fas fa-medal text-yellow-400" aria-hidden="true"></i>成就系统
+                        </h4>
+                        <div class="grid grid-cols-3 gap-3" id="achievements-grid" role="list" aria-label="成就列表"></div>
+                    </div>
+
+                    <div class="glass rounded-2xl p-6">
+                        <h4 class="text-sm font-semibold text-gray-300 mb-4 flex items-center gap-2">
+                            <i class="fas fa-tree text-green-400" aria-hidden="true"></i>技能树
+                        </h4>
+                        <div class="space-y-3" id="skill-tree" role="list" aria-label="技能列表"></div>
+                    </div>
+
+                    <div class="glass rounded-2xl p-6">
+                        <h4 class="text-sm font-semibold text-gray-300 mb-4">作战数据</h4>
+                        <div class="space-y-3" id="battle-stats" role="list">
+                            <div class="flex justify-between items-center" role="listitem"><span class="text-xs text-gray-500">累计学习时长</span><span class="text-sm font-mono text-white">8h / 720h</span></div>
+                            <div class="flex justify-between items-center" role="listitem"><span class="text-xs text-gray-500">产出物数量</span><span class="text-sm font-mono text-cyan-400">2</span></div>
+                            <div class="flex justify-between items-center" role="listitem"><span class="text-xs text-gray-500">SQL刷题</span><span class="text-sm font-mono text-yellow-400">0 / 100</span></div>
+                            <div class="flex justify-between items-center" role="listitem"><span class="text-xs text-gray-500">项目进度</span><span class="text-sm font-mono text-purple-400">0%</span></div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </main>
+
+        <!-- AI Agent Widget -->
+        <div id="agent-widget" class="fixed bottom-6 right-6 z-50">
+            <div id="agent-chat" class="hidden mb-4 w-96 max-w-[calc(100vw-2rem)] glass-strong rounded-2xl overflow-hidden glow-purple transition-all duration-300 origin-bottom-right" role="dialog" aria-label="AI战术顾问对话窗口" aria-hidden="true">
+                <div class="p-4 border-b border-purple-500/20 flex items-center justify-between bg-gradient-to-r from-purple-900/50 to-transparent">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center" style="animation: breathe 2s ease-in-out infinite" aria-hidden="true">
+                            <i class="fas fa-robot text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-sm font-bold text-white">AI战术顾问</h4>
+                            <div class="flex items-center gap-1"><div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" aria-hidden="true"></div><span class="text-[10px] text-green-400">在线</span></div>
+                        </div>
+                    </div>
+                    <button onclick="toggleAgent()" class="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors" aria-label="关闭对话">
+                        <i class="fas fa-times text-gray-400 text-sm" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <div id="chat-messages" class="h-80 overflow-y-auto p-4 space-y-4" role="log" aria-live="polite" aria-atomic="false"></div>
+                <div class="px-4 pb-2 flex gap-2 overflow-x-auto" id="quick-questions" role="list" aria-label="快捷问题"></div>
+                <div class="p-4 border-t border-purple-500/10">
+                    <div class="flex gap-2">
+                        <input type="text" id="chat-input" placeholder="输入你的问题..." class="flex-1 bg-white/5 border border-purple-500/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-colors" onkeypress="if(event.key==='Enter') sendMessage()" aria-label="输入消息">
+                        <button onclick="sendMessage()" class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center hover:opacity-90 transition-opacity ripple" aria-label="发送消息">
+                            <i class="fas fa-paper-plane text-white text-sm" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="toggleAgent()" id="agent-btn" class="w-14 h-14 rounded-full bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center glow-purple hover:scale-110 transition-transform ripple" style="animation: breathe 2s ease-in-out infinite" aria-label="打开AI战术顾问" aria-haspopup="dialog" aria-expanded="false">
+                <i class="fas fa-robot text-white text-xl" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <footer class="glass border-t border-purple-500/10 mt-12 py-6" role="contentinfo">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p class="text-xs text-gray-600 font-mono"><i class="fas fa-code text-purple-500" aria-hidden="true"></i> CareerNav AI · 985小白AI产品经理3个月作战手册 · 2026</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+    // ===== DATA MODELS (Following SKILL.md Section 2) =====
+    const stages = {
+        1: { id: "stage-1", name: "破冰筑基", subtitle: "理解Agent电商赛道", dayRange: [1, 20], color: "purple", icon: "fa-snowflake", status: "active" },
+        2: { id: "stage-2", name: "项目实战", subtitle: "做出有壁垒的Agent电商产品", dayRange: [21, 60], color: "cyan", icon: "fa-hammer", status: "locked" },
+        break: { id: "stage-break", name: "休整期", subtitle: "轻量保持手感", dayRange: [61, 67], color: "gray", icon: "fa-coffee", status: "locked" },
+        3: { id: "stage-3", name: "面试冲刺", subtitle: "让面试官觉得你能干活", dayRange: [68, 90], color: "yellow", icon: "fa-trophy", status: "locked" }
+    };
+
+    const milestones = {
+        1: [
+            { id: "m1-1", name: "Agent电商产品体验", day: 1, icon: "fa-shopping-bag", isCompleted: false, reward: "初出茅庐" },
+            { id: "m1-2", name: "Vibe Coding入门", day: 4, icon: "fa-code", isCompleted: false, reward: "代码新手" },
+            { id: "m1-3", name: "竞品分析报告", day: 8, icon: "fa-search", isCompleted: false, reward: "竞品分析师" },
+            { id: "m1-4", name: "Dify Agent入门", day: 13, icon: "fa-robot", isCompleted: false, reward: "Agent专家" },
+            { id: "m1-5", name: "SQL 60题", day: 15, icon: "fa-database", isCompleted: false, reward: "数据达人" },
+            { id: "m1-6", name: "PRD初稿完成", day: 20, icon: "fa-file-alt", isCompleted: false, reward: "产品新星" }
+        ],
+        2: [
+            { id: "m2-1", name: "MVP v0.1搭建", day: 30, icon: "fa-rocket", isCompleted: false, reward: "架构师" },
+            { id: "m2-2", name: "多模态+个性化", day: 35, icon: "fa-image", isCompleted: false, reward: "多模态先锋" },
+            { id: "m2-3", name: "合规风控专项", day: 43, icon: "fa-shield-alt", isCompleted: false, reward: "合规卫士" },
+            { id: "m2-4", name: "A/B测试验证", day: 40, icon: "fa-flask", isCompleted: false, reward: "实验科学家" },
+            { id: "m2-5", name: "商业化方案", day: 53, icon: "fa-chart-line", isCompleted: false, reward: "商业洞察者" }
+        ],
+        break: [],
+        3: [
+            { id: "m3-1", name: "简历精修", day: 72, icon: "fa-id-card", isCompleted: false, reward: "简历大师" },
+            { id: "m3-2", name: "面试题库40道", day: 77, icon: "fa-book", isCompleted: false, reward: "题库达人" },
+            { id: "m3-3", name: "模拟面试5次", day: 82, icon: "fa-comments", isCompleted: false, reward: "面试王者" },
+            { id: "m3-4", name: "拿到Offer", day: 90, icon: "fa-crown", isCompleted: false, reward: "Offer收割机" }
+        ]
+    };
+
+    const achievements = [
+        { id: "a1", name: "初出茅庐", icon: "fa-rocket", rarity: "common", unlocked: true, desc: "开始第一天学习" },
+        { id: "a2", name: "代码新手", icon: "fa-code", rarity: "common", unlocked: false, desc: "完成Vibe Coding入门" },
+        { id: "a3", name: "竞品分析师", icon: "fa-search", rarity: "rare", unlocked: false, desc: "完成竞品分析报告" },
+        { id: "a4", name: "Agent专家", icon: "fa-robot", rarity: "rare", unlocked: false, desc: "创建第一个Agent应用" },
+        { id: "a5", name: "数据达人", icon: "fa-chart-line", rarity: "rare", unlocked: false, desc: "SQL刷题60道" },
+        { id: "a6", name: "面试王者", icon: "fa-crown", rarity: "epic", unlocked: false, desc: "完成5次模拟面试" }
+    ];
+
+    const skills = [
+        { id: "sk1", name: "AI产品思维", level: 1, progress: 20, color: "purple" },
+        { id: "sk2", name: "Vibe Coding", level: 1, progress: 10, color: "cyan" },
+        { id: "sk3", name: "数据分析", level: 1, progress: 15, color: "yellow" },
+        { id: "sk4", name: "Agent设计", level: 0, progress: 5, color: "pink" },
+        { id: "sk5", name: "合规风控", level: 0, progress: 0, color: "red" }
+    ];
+
+    // ===== 90 DAY PLAN DATA =====
+    const planData = {};
+
+    // Stage 1: Day 1-5 detailed
+    const stage1Detailed = {
+        1: { title: "Agent电商认知破冰", desc: "深度体验淘宝AI买手、京东京言等产品，完成真实购物任务，建立AI电商直觉。",
+            tasks: [
+                { time: "08:30-11:30", title: "体验Agent电商产品", desc: "注册并深度体验淘宝AI买手、京东京言、拼多多AI助手，用每个产品完成一次真实购物任务", type: "core", icon: "fa-shopping-bag" },
+                { time: "13:30-16:00", title: "B站学习Agent电商", desc: "搜索'Agent电商''AI购物助手'，看播放量最高的3个视频", type: "learn", icon: "fa-video" },
+                { time: "16:00-17:30", title: "牛客网SQL初探", desc: "注册牛客网，了解SQL题库结构，看10道最简单的题", type: "data", icon: "fa-database" },
+                { time: "19:30-21:00", title: "复盘输出体验笔记", desc: "写第一篇学习笔记，发布到即刻/小红书/个人博客", type: "output", icon: "fa-pen" }
+            ], outputs: ["3个Agent电商产品体验", "1篇体验笔记"] },
+        2: { title: "理解Agent核心概念", desc: "对比传统搜索与AI买手，理解Agent=LLM+工具调用+记忆+规划的核心概念。",
+            tasks: [
+                { time: "08:30-11:30", title: "传统搜索 vs AI买手对比", desc: "用传统搜索和AI买手完成同一个购物任务，记录时间成本、决策质量、满意度差异", type: "core", icon: "fa-balance-scale" },
+                { time: "13:30-16:00", title: "学习AI Agent核心概念", desc: "看吴恩达《AI for Everyone》第1-2课，理解Agent与传统AI的区别", type: "learn", icon: "fa-brain" },
+                { time: "16:00-17:30", title: "SQL基础练习", desc: "牛客网SQL第1-5题（SELECT/WHERE基础）", type: "data", icon: "fa-code" },
+                { time: "19:30-21:00", title: "输出Agent概念笔记", desc: "用大白话解释：传统AI是'你问它答'，Agent是'你给它目标，它自己想办法完成'", type: "output", icon: "fa-lightbulb" }
+            ], outputs: ["对比体验记录", "Agent概念笔记", "5道SQL题"] },
+        3: { title: "理解RAG、Prompt、多模态", desc: "测试多模态能力，学习Prompt Engineering基础，理解RAG在Agent电商中的作用。",
+            tasks: [
+                { time: "08:30-11:30", title: "测试多模态与RAG", desc: "测试淘宝AI买手多模态能力（上传图片），测试京东京言RAG能力（实时信息查询）", type: "core", icon: "fa-image" },
+                { time: "13:30-16:00", title: "Prompt Engineering入门", desc: "学习角色设定+背景信息+具体任务+输出格式，给ChatGPT写3个不同风格Prompt", type: "learn", icon: "fa-terminal" },
+                { time: "16:00-17:30", title: "SQL进阶", desc: "牛客网SQL第6-10题（ORDER BY/LIMIT）", type: "data", icon: "fa-sort" },
+                { time: "19:30-21:00", title: "输出技术笔记", desc: "解释为什么Agent电商需要RAG+多模态", type: "output", icon: "fa-file-alt" }
+            ], outputs: ["多模态体验记录", "Prompt练习", "SQL 10题"] },
+        4: { title: "Vibe Coding入门 - 第一个作品", desc: "使用Bolt.new生成第一个电商网页，理解vibe coding的核心逻辑。",
+            tasks: [
+                { time: "08:30-11:30", title: "Bolt.new第一个作品", desc: "打开Bolt.new，输入需求生成电商商品展示网页，部署并保存链接", type: "core", icon: "fa-bolt" },
+                { time: "13:30-16:00", title: "学习Vibe Coding概念", desc: "看Bolt.new教程视频，理解'用自然语言描述需求，AI帮你实现'", type: "learn", icon: "fa-magic" },
+                { time: "16:00-17:30", title: "SQL条件过滤", desc: "牛客网SQL第11-15题（AND/OR/IN）", type: "data", icon: "fa-filter" },
+                { time: "19:30-21:00", title: "记录Vibe Coding体验", desc: "记录输入了什么、AI生成了什么、哪里需要调整", type: "output", icon: "fa-clipboard" }
+            ], outputs: ["1个电商商品展示网页", "SQL 15题"] },
+        5: { title: "Vibe Coding - 购物车页面", desc: "使用Cursor制作购物车页面，理解前端/后端/数据库/API分工。",
+            tasks: [
+                { time: "08:30-11:30", title: "Cursor购物车页面", desc: "用Cursor制作购物车页面：添加商品、显示总价、修改数量、删除商品", type: "core", icon: "fa-shopping-cart" },
+                { time: "13:30-16:00", title: "理解技术架构", desc: "学习前端/后端/数据库/API基本概念和分工", type: "learn", icon: "fa-sitemap" },
+                { time: "16:00-17:30", title: "SQL聚合函数", desc: "牛客网SQL第16-20题（COUNT/SUM/AVG）", type: "data", icon: "fa-calculator" },
+                { time: "19:30-21:00", title: "画技术架构图", desc: "画一张图：用户点击购买→前端发API→后端查数据库→返回库存状态", type: "output", icon: "fa-project-diagram" }
+            ], outputs: ["1个购物车网页", "技术架构理解", "SQL 20题"] }
+    };
+
+    for (let d in stage1Detailed) { planData[d] = { stage: 1, ...stage1Detailed[d] }; }
+
+    // Stage 1 remaining (6-20)
+    for (let i = 6; i <= 20; i++) {
+        planData[i] = { stage: 1, title: `第一阶段任务 · Day ${i}`, desc: "持续深入AI电商赛道学习，积累产品基础能力。",
+            tasks: [
+                { time: "08:30-11:30", title: `项目实战任务 ${i}`, desc: "持续推进核心项目", type: "core", icon: "fa-rocket" },
+                { time: "13:30-16:00", title: "知识补全", desc: "学习AI产品方法论", type: "learn", icon: "fa-book" },
+                { time: "16:00-17:30", title: "SQL练习", desc: "继续刷题", type: "data", icon: "fa-database" },
+                { time: "19:30-21:00", title: "复盘输出", desc: "整理学习笔记", type: "output", icon: "fa-pen" }
+            ], outputs: ["学习笔记", "SQL练习"] };
+    }
+
+    // Stage 2: Day 21-60
+    for (let i = 21; i <= 60; i++) {
+        planData[i] = { stage: 2, title: `第二阶段 · 项目实战 Day ${i-20}`, desc: "AI电商智能买手项目实战，多Agent协作开发。",
+            tasks: [
+                { time: "08:30-11:30", title: "Agent开发", desc: "开发/优化Agent工作流", type: "core", icon: "fa-robot" },
+                { time: "13:30-16:00", title: "产品迭代", desc: "PRD撰写/用户测试", type: "learn", icon: "fa-sync" },
+                { time: "16:00-17:30", title: "数据分析", desc: "SQL/Excel/指标分析", type: "data", icon: "fa-chart-bar" },
+                { time: "19:30-21:00", title: "复盘文档", desc: "项目文档整理", type: "output", icon: "fa-file" }
+            ], outputs: ["Agent迭代", "测试数据"] };
+    }
+
+    // Break: Day 61-67
+    for (let i = 61; i <= 67; i++) {
+        planData[i] = { stage: 'break', title: `休整期 · Day ${i}`, desc: "轻量保持手感，刷面经+看行业资讯。",
+            tasks: [
+                { time: "灵活安排", title: "刷面经", desc: "牛客网AI产品经理面经", type: "learn", icon: "fa-book-open" },
+                { time: "灵活安排", title: "行业资讯", desc: "机器之心/36氪/量子位", type: "learn", icon: "fa-newspaper" }
+            ], outputs: ["面经笔记"] };
+    }
+
+    // Stage 3: Day 68-90
+    for (let i = 68; i <= 90; i++) {
+        planData[i] = { stage: 3, title: `第三阶段 · 面试冲刺 Day ${i-67}`, desc: "简历精修+面试题库+模拟面试+密集投递。",
+            tasks: [
+                { time: "08:30-11:30", title: "简历/作品集", desc: "精修简历，优化作品集", type: "core", icon: "fa-id-card" },
+                { time: "13:30-16:00", title: "面试准备", desc: "题库整理/模拟面试", type: "learn", icon: "fa-comments" },
+                { time: "16:00-17:30", title: "投递岗位", desc: "Boss直聘/官网/内推", type: "core", icon: "fa-paper-plane" },
+                { time: "19:30-21:00", title: "复盘调整", desc: "面试复盘，策略调整", type: "output", icon: "fa-chart-line" }
+            ], outputs: ["投递记录", "面试反馈"] };
+    }
+
+    // ===== STATE =====
+    let currentDay = 1;
+    let completedTasks = new Set(JSON.parse(localStorage.getItem('completedTasks') || '[]'));
+    let chatOpen = false;
+    let chatHistory = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+
+    // ===== THREE.JS PARTICLES =====
+    function initParticles() {
+        const canvas = document.getElementById('particle-canvas');
+        if (!canvas || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const particleCount = 150;
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount; i++) {
+            positions[i*3] = (Math.random()-0.5)*20;
+            positions[i*3+1] = (Math.random()-0.5)*20;
+            positions[i*3+2] = (Math.random()-0.5)*20;
+            const colorChoice = Math.random();
+            if (colorChoice < 0.5) { colors[i*3]=0.55; colors[i*3+1]=0.36; colors[i*3+2]=0.96; }
+            else { colors[i*3]=0.02; colors[i*3+1]=0.71; colors[i*3+2]=0.83; }
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const material = new THREE.PointsMaterial({ size: 0.05, vertexColors: true, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
+        const particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+        camera.position.z = 5;
+
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+            mouseY = (e.clientY / window.innerHeight - 0.5) * 2;
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            particles.rotation.x += 0.0003;
+            particles.rotation.y += 0.0005;
+            particles.rotation.x += mouseY * 0.0005;
+            particles.rotation.y += mouseX * 0.0005;
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    }
+
+    // ===== RENDER FUNCTIONS =====
+    function renderMilestones() {
+        const container = document.getElementById('milestones-list');
+        const stageMilestones = milestones[planData[currentDay]?.stage] || [];
+        container.innerHTML = '';
+        stageMilestones.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2 text-sm';
+            div.setAttribute('role', 'listitem');
+            div.innerHTML = `<i class="fas ${m.isCompleted ? 'fa-check-circle text-green-400' : 'fa-circle text-gray-600 text-xs'}"></i><span class="${m.isCompleted ? 'text-gray-400' : 'text-gray-500'}">${m.name}</span>`;
+            container.appendChild(div);
+        });
+    }
+
+    function renderAchievements() {
+        const container = document.getElementById('achievements-grid');
+        container.innerHTML = '';
+        achievements.forEach(a => {
+            const div = document.createElement('div');
+            div.className = `flex flex-col items-center gap-2 p-3 rounded-xl bg-white/5 ${a.unlocked ? 'hover:bg-white/10 cursor-pointer' : 'opacity-40'} transition-all`;
+            div.setAttribute('role', 'listitem');
+            div.title = a.desc;
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-full ${a.unlocked ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20' : 'bg-gray-700'} flex items-center justify-center ${a.unlocked ? 'hover:scale-110' : ''} transition-transform">
+                    <i class="fas ${a.icon} ${a.unlocked ? 'text-yellow-400' : 'text-gray-500'} text-sm"></i>
+                </div>
+                <span class="text-[10px] text-gray-500 text-center">${a.name}</span>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderSkills() {
+        const container = document.getElementById('skill-tree');
+        container.innerHTML = '';
+        skills.forEach(s => {
+            const div = document.createElement('div');
+            div.setAttribute('role', 'listitem');
+            div.innerHTML = `
+                <div class="flex justify-between text-xs mb-1"><span class="text-gray-400">${s.name}</span><span class="text-${s.color}-400 font-mono">Lv.${s.level}</span></div>
+                <div class="h-2 bg-white/5 rounded-full overflow-hidden"><div class="h-full bg-gradient-to-r from-${s.color}-500 to-${s.color}-400 rounded-full transition-all duration-1000" style="width:${s.progress}%"></div></div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function renderTasks() {
+        const dayData = planData[currentDay];
+        if (!dayData) return;
+
+        document.getElementById('day-display').textContent = `Day ${currentDay}`;
+        document.getElementById('day-title').textContent = dayData.title;
+        document.getElementById('day-desc').textContent = dayData.desc;
+        document.getElementById('current-day').textContent = currentDay;
+
+        const s = dayData.stage;
+        const stageBadge = document.getElementById('stage-badge');
+        const stageNames = { 1: '第一阶段', 2: '第二阶段', 3: '第三阶段', 'break': '休整期' };
+        stageBadge.textContent = stageNames[s] || '未知阶段';
+        stageBadge.className = `px-3 py-1 rounded-full text-xs font-mono border ${s===1?'bg-purple-500/20 text-purple-400 border-purple-500/30':s===2?'bg-cyan-500/20 text-cyan-400 border-cyan-500/30':s===3?'bg-yellow-500/20 text-yellow-400 border-yellow-500/30':'bg-gray-500/20 text-gray-400 border-gray-500/30'}`;
+
+        const container = document.getElementById('task-container');
+        container.innerHTML = '';
+
+        const typeColors = { core: 'from-purple-500 to-purple-600', learn: 'from-cyan-500 to-cyan-600', data: 'from-yellow-500 to-yellow-600', output: 'from-pink-500 to-pink-600' };
+        const typeLabels = { core: '核心实战', learn: '知识补全', data: '数据分析', output: '复盘输出' };
+
+        dayData.tasks.forEach((task) => {
+            const taskId = `${currentDay}-${task.title}`;
+            const isCompleted = completedTasks.has(taskId);
+            const card = document.createElement('div');
+            card.className = `mission-card glass rounded-2xl p-5 ${isCompleted ? 'completed' : ''}`;
+            card.setAttribute('role', 'listitem');
+            card.innerHTML = `
+                <div class="flex items-start gap-4">
+                    <div class="flex flex-col items-center gap-2">
+                        <input type="checkbox" class="custom-checkbox" ${isCompleted ? 'checked' : ''} onchange="toggleTask('${taskId}', this)" aria-label="${task.title}">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br ${typeColors[task.type] || 'from-gray-500 to-gray-600'} flex items-center justify-center flex-shrink-0" aria-hidden="true">
+                            <i class="fas ${task.icon} text-white text-sm"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="px-2 py-0.5 rounded-md bg-white/5 text-[10px] font-mono text-gray-400">${task.time}</span>
+                            <span class="px-2 py-0.5 rounded-md bg-gradient-to-r ${typeColors[task.type]} text-[10px] text-white font-medium">${typeLabels[task.type]}</span>
+                        </div>
+                        <h4 class="text-base font-semibold text-white mb-1 ${isCompleted ? 'line-through text-gray-500' : ''}">${task.title}</h4>
+                        <p class="text-sm text-gray-400 ${isCompleted ? 'line-through' : ''}">${task.desc}</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        const outputsList = document.getElementById('outputs-list');
+        outputsList.innerHTML = '';
+        dayData.outputs.forEach(output => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5';
+            div.setAttribute('role', 'listitem');
+            div.innerHTML = `<i class="fas fa-file-alt text-purple-400" aria-hidden="true"></i><span class="text-sm text-gray-300">${output}</span><span class="ml-auto text-xs text-gray-500 font-mono">待完成</span>`;
+            outputsList.appendChild(div);
+        });
+
+        renderMilestones();
+        updateProgress();
+    }
+
+    function toggleTask(taskId, checkbox) {
+        if (checkbox.checked) {
+            completedTasks.add(taskId);
+            createParticleBurst(checkbox);
+            createExpFloat(checkbox);
+            checkMilestoneCompletion();
+        } else {
+            completedTasks.delete(taskId);
+        }
+        localStorage.setItem('completedTasks', JSON.stringify([...completedTasks]));
+        renderTasks();
+        updateProgress();
+    }
+
+    function createParticleBurst(element) {
+        const rect = element.getBoundingClientRect();
+        const colors = ['#8B5CF6', '#06B6D4', '#F59E0B', '#10B981', '#EC4899'];
+        for (let i = 0; i < 12; i++) {
+            const particle = document.createElement('div');
+            particle.style.cssText = `position:fixed;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:9999;left:${rect.left+rect.width/2}px;top:${rect.top+rect.height/2}px;background:${colors[Math.floor(Math.random()*colors.length)]}`;
+            document.body.appendChild(particle);
+            const angle = (Math.PI * 2 * i) / 12;
+            const distance = 50 + Math.random() * 50;
+            gsap.to(particle, { x: Math.cos(angle)*distance, y: Math.sin(angle)*distance, opacity: 0, scale: 0, duration: 0.8, ease: "power2.out", onComplete: () => particle.remove() });
+        }
+    }
+
+    function createExpFloat(element) {
+        const rect = element.getBoundingClientRect();
+        const exp = document.createElement('div');
+        exp.textContent = '+50 EXP';
+        exp.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top-20}px;color:#F59E0B;font-weight:bold;font-size:14px;pointer-events:none;z-index:9999;font-family:JetBrains Mono`;
+        exp.className = 'exp-float';
+        document.body.appendChild(exp);
+        setTimeout(() => exp.remove(), 1200);
+    }
+
+    function checkMilestoneCompletion() {
+        const stage = planData[currentDay]?.stage;
+        if (!stage || stage === 'break') return;
+
+        const stageMilestones = milestones[stage];
+        const stageStart = stages[stage].dayRange[0];
+        const stageEnd = stages[stage].dayRange[1];
+
+        let allCompleted = true;
+        for (let d = stageStart; d <= Math.min(stageEnd, currentDay); d++) {
+            const dayTasks = planData[d]?.tasks || [];
+            for (let t of dayTasks) {
+                if (!completedTasks.has(`${d}-${t.title}`)) {
+                    allCompleted = false;
+                    break;
+                }
+            }
+        }
+
+        if (allCompleted && currentDay === stageEnd) {
+            showLevelUp(stage);
+        }
+    }
+
+    function showLevelUp(stageId) {
+        const modal = document.getElementById('level-up-modal');
+        const stageName = stages[stageId].name;
+        document.getElementById('completed-stage-name').textContent = stageName;
+
+        const badgesContainer = document.getElementById('unlocked-badges');
+        badgesContainer.innerHTML = '';
+
+        const stageMilestones = milestones[stageId] || [];
+        stageMilestones.forEach((m, index) => {
+            const badge = document.createElement('div');
+            badge.className = 'badge-fly-in';
+            badge.style.animationDelay = `${index * 0.3}s`;
+            badge.innerHTML = `
+                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center glow-purple">
+                    <i class="fas ${m.icon} text-white text-xl"></i>
+                </div>
+                <div class="text-xs text-center mt-2 text-gray-300">${m.reward}</div>
+            `;
+            badgesContainer.appendChild(badge);
+        });
+
+        modal.classList.add('active');
+    }
+
+    function closeLevelUp() {
+        document.getElementById('level-up-modal').classList.remove('active');
+    }
+
+    function changeDay(delta) {
+        const newDay = currentDay + delta;
+        if (newDay >= 1 && newDay <= 90) {
+            currentDay = newDay;
+            renderTasks();
+            gsap.from('#task-container', { y: delta > 0 ? 30 : -30, opacity: 0, duration: 0.4, ease: "power2.out" });
+        }
+    }
+
+    function updateProgress() {
+        const totalTasks = Object.values(planData).reduce((sum, day) => sum + day.tasks.length, 0);
+        const completed = completedTasks.size;
+        const percent = Math.round((completed / totalTasks) * 100);
+
+        document.getElementById('overall-percent').textContent = percent + '%';
+        document.getElementById('overall-progress').style.width = percent + '%';
+        document.getElementById('overall-progress').parentElement.setAttribute('aria-valuenow', percent);
+        document.getElementById('stars-count').textContent = Math.floor(completed / 5);
+
+        const s = planData[currentDay]?.stage || 1;
+        let stageDays, stageStart;
+        if (s === 1) { stageDays = 20; stageStart = 1; }
+        else if (s === 2) { stageDays = 40; stageStart = 21; }
+        else if (s === 3) { stageDays = 23; stageStart = 68; }
+        else { stageDays = 7; stageStart = 61; }
+
+        const stageProgress = Math.min(100, Math.round(((currentDay - stageStart + 1) / stageDays) * 100));
+        document.getElementById('stage-percent').textContent = stageProgress + '%';
+        document.getElementById('stage-progress').style.width = stageProgress + '%';
+        document.getElementById('stage-progress').parentElement.setAttribute('aria-valuenow', stageProgress);
+        document.getElementById('completed-count').textContent = currentDay - stageStart;
+        document.getElementById('remaining-count').textContent = stageDays - (currentDay - stageStart + 1);
+
+        const stageTitleMap = { 1: '第一阶段', 2: '第二阶段', 3: '第三阶段', 'break': '休整期' };
+        const stageSubMap = { 1: '破冰筑基', 2: '项目实战', 3: '面试冲刺', 'break': '轻量保持' };
+        document.getElementById('stage-title').textContent = stageTitleMap[s] || '未知';
+        document.getElementById('stage-subtitle').textContent = stageSubMap[s] || '';
+    }
+
+    function switchStage(stage) {
+        document.querySelectorAll('.stage-node').forEach(node => {
+            node.classList.remove('active');
+            const iconBox = node.querySelector('div:first-child');
+            iconBox.className = 'w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center border-2 border-gray-600/30 transition-all';
+            node.querySelector('span:nth-child(2)').className = 'text-xs md:text-sm font-medium text-gray-500';
+        });
+
+        const activeNode = document.querySelector(`[data-stage="${stage}"]`);
+        if (activeNode) {
+            activeNode.classList.add('active');
+            const iconBox = activeNode.querySelector('div:first-child');
+            iconBox.className = 'w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-800 flex items-center justify-center glow-purple border-2 border-purple-400/50 transition-all';
+            activeNode.querySelector('span:nth-child(2)').className = 'text-xs md:text-sm font-medium text-purple-300';
+        }
+
+        if (stage === 1) currentDay = 1;
+        else if (stage === 2) currentDay = 21;
+        else if (stage === 'break') currentDay = 61;
+        else if (stage === 3) currentDay = 68;
+        renderTasks();
+    }
+
+    // ===== AI AGENT (Following SKILL.md Section 5) =====
+    function toggleAgent() {
+        chatOpen = !chatOpen;
+        const chat = document.getElementById('agent-chat');
+        const btn = document.getElementById('agent-btn');
+        if (chatOpen) {
+            chat.classList.remove('hidden');
+            chat.setAttribute('aria-hidden', 'false');
+            btn.setAttribute('aria-expanded', 'true');
+            gsap.from(chat, { scale: 0.8, opacity: 0, duration: 0.3, ease: "back.out(1.7)" });
+            if (chatHistory.length === 0) {
+                addAgentMessage(getSystemPrompt());
+            }
+        } else {
+            gsap.to(chat, { scale: 0.8, opacity: 0, duration: 0.2, ease: "power2.in", onComplete: () => {
+                chat.classList.add('hidden');
+                chat.setAttribute('aria-hidden', 'true');
+                btn.setAttribute('aria-expanded', 'false');
+            }});
+        }
+    }
+
+    function getSystemPrompt() {
+        const dayData = planData[currentDay] || {};
+        const stageName = stages[dayData.stage]?.name || '未知';
+        const completed = Array.from(completedTasks).filter(t => t.startsWith(`${currentDay}-`)).length;
+        const total = dayData.tasks?.length || 0;
+
+        return `指挥官你好！我是你的AI战术顾问。\n\n**当前状态**：Day ${currentDay} · ${stageName}\n**今日进度**：${completed}/${total} 任务已完成\n**今日主题**：${dayData.title || '无'}\n\n有什么需要我协助的吗？记住：每天输出，不要只输入！`;
+    }
+
+    function getAgentSystemPromptForAPI() {
+        const dayData = planData[currentDay] || {};
+        const stageName = stages[dayData.stage]?.name || '未知';
+        const completed = Array.from(completedTasks).filter(t => t.startsWith(`${currentDay}-`)).length;
+        const total = dayData.tasks?.length || 0;
+
+        return `你是"AI战术顾问"，一位严苛但专业的AI产品经理导师。你正在指导用户完成"985小白AI产品经理3个月作战手册"。
+
+【当前上下文】
+- 用户正在查看：Day ${currentDay} / ${stageName}
+- 今日主题：${dayData.title || '无'}
+- 今日描述：${dayData.desc || '无'}
+- 用户进度：${completed}/${total} 任务已完成
+
+【性格设定】
+- 语气：专业、直接、略带严厉但充满关怀
+- 风格：像游戏里的导师NPC，会用"战士""关卡""装备"等游戏化比喻
+- 限制：每次回答不超过300字，除非用户要求详细解释
+- 格式：使用Markdown，关键概念加粗，步骤用编号列表
+
+【回答策略】
+1. 先肯定用户当前进度（如果已完成部分任务）
+2. 针对用户问题给出具体、可执行的建议
+3. 如果用户问的是技术问题，用小白能懂的大白话解释
+4. 如果用户表现出焦虑，引用手册中的鼓励语
+5. 每次结尾给一个"今日战术建议"（一句话 actionable tip）`;
+    }
+
+    function addAgentMessage(text) {
+        const container = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'flex gap-3';
+        div.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex-shrink-0 flex items-center justify-center" aria-hidden="true">
+                <i class="fas fa-robot text-white text-xs"></i>
+            </div>
+            <div class="agent-message bg-white/5 rounded-xl p-3 text-sm text-gray-300 max-w-[80%]">
+                <p>${escapeHtml(text).replace(/\n/g, '<br>')}</p>
+            </div>
+        `;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        chatHistory.push({ role: 'agent', content: text });
+        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    }
+
+    function addUserMessage(text) {
+        const container = document.getElementById('chat-messages');
+        const div = document.createElement('div');
+        div.className = 'flex gap-3';
+        div.innerHTML = `
+            <div class="ml-auto bg-gradient-to-br from-purple-600 to-cyan-500 rounded-xl p-3 text-sm text-white max-w-[80%]">
+                <p>${escapeHtml(text)}</p>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-white/10 flex-shrink-0 flex items-center justify-center" aria-hidden="true">
+                <i class="fas fa-user text-gray-400 text-xs"></i>
+            </div>
+        `;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        chatHistory.push({ role: 'user', content: text });
+        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    }
+
+    function renderQuickQuestions() {
+        const container = document.getElementById('quick-questions');
+        const questions = [
+            { text: '如何完成今日任务？', color: 'purple' },
+            { text: 'Agent电商是什么？', color: 'cyan' },
+            { text: '给我今日战术建议', color: 'yellow' }
+        ];
+        container.innerHTML = '';
+        questions.forEach(q => {
+            const btn = document.createElement('button');
+            btn.className = `px-3 py-1.5 rounded-full bg-${q.color}-500/20 text-${q.color}-300 text-xs whitespace-nowrap hover:bg-${q.color}-500/30 transition-colors border border-${q.color}-500/20`;
+            btn.textContent = q.text;
+            btn.onclick = () => sendQuickMessage(q.text);
+            container.appendChild(btn);
+        });
+    }
+
+    function sendQuickMessage(text) {
+        document.getElementById('chat-input').value = text;
+        sendMessage();
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('chat-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        addUserMessage(text);
+        input.value = '';
+
+        const typingId = addTypingIndicator();
+
+        try {
+            const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer sk-3b4bc77a118f421c99a8f7629674a1b2'
+                },
+                body: JSON.stringify({
+                    model: 'deepseek-chat',
+                    messages: [
+                        { role: 'system', content: getAgentSystemPromptForAPI() },
+                        { role: 'user', content: text }
+                    ],
+                    stream: false
+                })
+            });
+
+            const data = await response.json();
+            removeTypingIndicator(typingId);
+
+            if (data.choices && data.choices[0]) {
+                addAgentMessage(data.choices[0].message.content);
+            } else {
+                addAgentMessage('抱歉，我暂时无法回答这个问题。请检查API配置或稍后再试。');
+            }
+        } catch (error) {
+            removeTypingIndicator(typingId);
+            addAgentMessage('网络连接异常，请检查API Key是否正确，或稍后再试。\n\n错误：' + error.message);
+        }
+    }
+
+    function addTypingIndicator() {
+        const container = document.getElementById('chat-messages');
+        const id = 'typing-' + Date.now();
+        const div = document.createElement('div');
+        div.id = id;
+        div.className = 'flex gap-3';
+        div.innerHTML = `
+            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex-shrink-0 flex items-center justify-center" aria-hidden="true">
+                <i class="fas fa-robot text-white text-xs"></i>
+            </div>
+            <div class="bg-white/5 rounded-xl p-3 text-sm text-gray-400">
+                <span class="typing-cursor">思考中</span>
+            </div>
+        `;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+        return id;
+    }
+
+    function removeTypingIndicator(id) {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', () => {
+        initParticles();
+        renderTasks();
+        renderAchievements();
+        renderSkills();
+        renderQuickQuestions();
+
+        // Entrance animations
+        gsap.from('header', { y: -50, opacity: 0, duration: 0.8, ease: "power3.out" });
+        gsap.from('nav', { y: -30, opacity: 0, duration: 0.6, delay: 0.2, ease: "power3.out" });
+        gsap.from('aside', { x: -50, opacity: 0, duration: 0.6, delay: 0.4, ease: "power3.out", stagger: 0.1 });
+        gsap.from('section', { y: 30, opacity: 0, duration: 0.6, delay: 0.5, ease: "power3.out" });
+    });
+    </script>
+</body>
+</html>
